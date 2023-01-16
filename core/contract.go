@@ -1,8 +1,6 @@
 package core
 
 import (
-	"encoding/json"
-
 	"github.com/NethermindEth/juno/core/crypto"
 	"github.com/NethermindEth/juno/core/felt"
 )
@@ -66,31 +64,3 @@ type Contract struct {
 	// Root of the contract's storage trie.
 	StorageRoot *felt.Felt // TODO: is this field necessary?
 }
-
-type (
-	Hints       map[uint64]interface{}
-	Identifiers map[string]struct {
-		CairoType   string
-		Decorators  []interface{}
-		Destination string
-		FullName    string
-		Members     interface{}
-		Pc          uint64
-		References  []interface{}
-		Size        uint64
-		Type        string
-		Value       json.Number
-	}
-	Program struct {
-		Attributes       interface{}
-		Builtins         []string
-		CompilerVersion  string
-		Data             []string
-		DebugInfo        interface{}
-		Hints            Hints
-		Identifiers      Identifiers
-		MainScope        interface{}
-		Prime            string
-		ReferenceManager interface{}
-	}
-)
