@@ -74,8 +74,7 @@ func (c ContractCode) MarshalsJSON(identifiers clients.Identifiers) ([]byte, err
 	buf := &bytes.Buffer{}
 	buf.Write([]byte("{"))
 	buf.Write([]byte("\"abi\": "))
-	err := formatter(buf, c.Abi, "", identifiers)
-	if err != nil {
+	if err := formatter(buf, c.Abi, "", identifiers); err != nil {
 		return nil, err
 	}
 
@@ -110,8 +109,7 @@ func (c ContractCode) MarshalsJSON(identifiers clients.Identifiers) ([]byte, err
 	for key, value := range identifiers {
 		newValue, _ := json.Marshal(&value)
 		var newValueInterface map[string]interface{}
-		err := json.Unmarshal(newValue, &newValueInterface)
-		if err != nil {
+		if err := json.Unmarshal(newValue, &newValueInterface); err != nil {
 			return nil, err
 		}
 		identifiersInterface[key] = newValueInterface
@@ -181,8 +179,7 @@ func formatter(buf *bytes.Buffer, value interface{}, tree string, identifiers cl
 				if reflect.TypeOf(v[k]) == reflect.TypeOf(map[string]interface{}{}) {
 					tree = k
 				}
-				err := formatter(buf, v[k], tree, identifiers)
-				if err != nil {
+				if err := formatter(buf, v[k], tree, identifiers); err != nil {
 					return err
 				}
 			}
@@ -205,8 +202,7 @@ func formatter(buf *bytes.Buffer, value interface{}, tree string, identifiers cl
 			buf.WriteString(strconv.FormatUint(k, 10))
 			buf.Write([]byte{'"'})
 			buf.Write([]byte(": "))
-			err := formatter(buf, v[k], "", identifiers)
-			if err != nil {
+			if err := formatter(buf, v[k], "", identifiers); err != nil {
 				return err
 			}
 			if i < len(keys)-1 {
@@ -218,8 +214,7 @@ func formatter(buf *bytes.Buffer, value interface{}, tree string, identifiers cl
 		buf.Write([]byte{'['})
 		count := 0
 		for _, value := range v {
-			err := formatter(buf, value, "", identifiers)
-			if err != nil {
+			if err := formatter(buf, value, "", identifiers); err != nil {
 				return err
 			}
 			if count < len(v)-1 {
