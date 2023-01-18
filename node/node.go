@@ -63,12 +63,16 @@ func New(cfg *Config) (StarkNetNode, error) {
 	}
 
 	bc := blockchain.NewBlockchain()
-	return &Node{
+	node := &Node{
 		cfg:        cfg,
 		blockchain: bc,
 		syncLoop:   sync.NewSyncLoop(bc, nil),
-		http:       jsonrpc.NewHttp(cfg.RpcPort, nil),
-	}, nil
+	}
+	node.http = jsonrpc.NewHttp(cfg.RpcPort, []jsonrpc.Method{
+		{"starknet_chainId", nil, node.ChainId},
+	})
+
+	return node, nil
 }
 
 func (n *Node) Run() error {
@@ -83,4 +87,8 @@ func (n *Node) Shutdown() error {
 
 	n.http.Shutdown()
 	return n.syncLoop.Shutdown()
+}
+
+func (n *Node) ChainId() (any, error) {
+	return fmt.Sprintf("0x%s", n.cfg.Network.ChainId().Text(16)), nil
 }
