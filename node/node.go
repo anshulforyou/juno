@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/NethermindEth/juno/core/blockchain"
+	"github.com/NethermindEth/juno/jsonrpc"
 	"github.com/NethermindEth/juno/sync"
-
 	"github.com/NethermindEth/juno/utils"
 )
 
@@ -47,6 +47,7 @@ type Node struct {
 
 	blockchain *blockchain.Blockchain
 	syncLoop   *sync.SyncLoop
+	http       *jsonrpc.Http
 }
 
 func New(cfg *Config) (StarkNetNode, error) {
@@ -66,17 +67,20 @@ func New(cfg *Config) (StarkNetNode, error) {
 		cfg:        cfg,
 		blockchain: bc,
 		syncLoop:   sync.NewSyncLoop(bc, nil),
+		http:       jsonrpc.NewHttp(cfg.RpcPort, nil),
 	}, nil
 }
 
 func (n *Node) Run() error {
 	log.Println("Running Juno with config: ", fmt.Sprintf("%+v", *n.cfg))
 
+	n.http.Run()
 	return n.syncLoop.Run()
 }
 
 func (n *Node) Shutdown() error {
 	log.Println("Shutting down Juno...")
 
+	n.http.Shutdown()
 	return n.syncLoop.Shutdown()
 }

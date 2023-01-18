@@ -1,6 +1,7 @@
 package jsonrpc
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -60,7 +61,7 @@ func TestRequest(t *testing.T) {
 	}
 
 	for desc, test := range failingTests {
-		_, err := newRequest(test.data)
+		_, err := newRequest(bytes.NewReader(test.data))
 		assert.EqualError(t, err, test.want, desc)
 	}
 
@@ -91,7 +92,7 @@ func TestRequest(t *testing.T) {
 	}
 
 	for desc, test := range happyPathTests {
-		_, err := newRequest(test.data)
+		_, err := newRequest(bytes.NewReader(test.data))
 		assert.NoError(t, err, desc)
 	}
 }
@@ -279,7 +280,7 @@ func TestBuildArguments(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		req, err := newRequest([]byte(test.req))
+		req, err := newRequest(bytes.NewReader([]byte(test.req)))
 		if err != nil {
 			t.Error(err)
 		}

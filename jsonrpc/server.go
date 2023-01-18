@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 )
@@ -37,9 +38,9 @@ type rpcError struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-func newRequest(data []byte) (*request, error) {
+func newRequest(reader io.Reader) (*request, error) {
 	req := new(request)
-	dec := json.NewDecoder(bytes.NewReader(data))
+	dec := json.NewDecoder(reader)
 	dec.UseNumber()
 	if err := dec.Decode(req); err != nil {
 		return nil, err
@@ -135,12 +136,20 @@ func respondWithErr(res *response, code int, message string) ([]byte, error) {
 }
 
 // Handle processes a request to the server
-// It returns the response in a byte array, only returns an error if it can not create the response byte array
+// It returns the response in a byte array, only returns an
+// error if it can not create the response byte array
 func (s *Server) Handle(data []byte) ([]byte, error) {
+	return s.HandleReader(bytes.NewReader(data))
+}
+
+// HandleReader processes a request to the server
+// It returns the response in a byte array, only returns an
+// error if it can not create the response byte array
+func (s *Server) HandleReader(reader io.Reader) ([]byte, error) {
 	res := response{
 		Version: "2.0",
 	}
-	req, err := newRequest(data)
+	req, err := newRequest(reader)
 	if err != nil {
 		return respondWithErr(&res, InvalidRequest, err.Error())
 	}
