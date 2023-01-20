@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"reflect"
 	"sort"
 	"strconv"
@@ -15,8 +16,8 @@ import (
 )
 
 type ContractCode struct {
-	Abi     interface{}
-	Program *clients.Program
+	Abi     interface{}      `json:"abi"`
+	Program *clients.Program `json:"program"`
 }
 
 func ProgramHash(contractDefinition *clients.ClassDefinition) (*felt.Felt, error) {
@@ -61,12 +62,131 @@ func ProgramHash(contractDefinition *clients.ClassDefinition) (*felt.Felt, error
 		return nil, err
 	}
 
+	programBytes2, err := MarshalJSONWithSeparators(contractCode, ", ", ": ")
+
+	idx := 0
+	for {
+		if programBytes2[idx] != programBytes[idx] {
+			fmt.Println(string(programBytes[0 : idx+50]))
+			fmt.Println(string(programBytes2[0 : idx+50]))
+			break
+		}
+		idx++
+	}
+
 	programKeccak, err := crypto.StarkNetKeccak(programBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	return programKeccak, nil
+}
+
+func MarshalJSONWithSeparators(v any, itemSeparator string, keySeparator string) ([]byte, error) {
+	if v == nil {
+		return []byte(`null`), nil
+	}
+
+	buf := &bytes.Buffer{}
+	vT := reflect.TypeOf(v)
+	switch vT.Kind() {
+	case reflect.Map:
+		buf.WriteString("{")
+
+		mapValue := reflect.ValueOf(v)
+		iter := mapValue.MapRange()
+
+		type mapItem struct {
+			key   string
+			value []byte
+		}
+
+		items := []mapItem{}
+		for iter.Next() {
+
+			mapK := iter.Key()
+			marshaledK, err := MarshalJSONWithSeparators(mapK.Interface(), itemSeparator, keySeparator)
+			if err != nil {
+				return nil, err
+			}
+
+			mapV := iter.Value()
+			marshaledV, err := MarshalJSONWithSeparators(mapV.Interface(), itemSeparator, keySeparator)
+			if err != nil {
+				return nil, err
+			}
+
+			items = append(items, mapItem{key: string(marshaledK), value: marshaledV})
+
+		}
+
+		sort.Slice(items, func(i, j int) bool {
+			iInt, iOk := new(big.Int).SetString(strings.ReplaceAll(items[i].key, "\"", ""), 0)
+			jInt, jOk := new(big.Int).SetString(strings.ReplaceAll(items[j].key, "\"", ""), 0)
+			if iOk && jOk {
+				return iInt.Cmp(jInt) == -1
+			}
+
+			return items[i].key < items[j].key
+		})
+
+		first := true
+		for _, item := range items {
+			if !first {
+				buf.WriteString(itemSeparator)
+			} else {
+				first = false
+			}
+			buf.WriteString(item.key)
+			buf.WriteString(keySeparator)
+			buf.Write(item.value)
+		}
+
+		buf.WriteString("}")
+	case reflect.Struct:
+		tempBuf := &bytes.Buffer{}
+		encoder := json.NewEncoder(tempBuf)
+		encoder.SetEscapeHTML(false)
+
+		err := encoder.Encode(v)
+		var mapFromStruct map[string]any
+		err = json.Unmarshal(tempBuf.Bytes(), &mapFromStruct)
+		if err != nil {
+			return nil, err
+		}
+		return MarshalJSONWithSeparators(mapFromStruct, itemSeparator, keySeparator)
+	case reflect.Array:
+		fallthrough
+	case reflect.Slice:
+		buf.WriteString("[")
+		list := reflect.ValueOf(v)
+		listLen := list.Len()
+		for i := 0; i < listLen; i++ {
+			if i > 0 {
+				buf.WriteString(itemSeparator)
+			}
+
+			item := list.Index(i)
+			valueMarshaled, err := MarshalJSONWithSeparators(item.Interface(), itemSeparator, keySeparator)
+			if err != nil {
+				return nil, err
+			}
+
+			buf.Write(valueMarshaled)
+		}
+		buf.WriteString("]")
+	case reflect.Pointer:
+		return MarshalJSONWithSeparators(reflect.ValueOf(v).Elem().Interface(), itemSeparator, keySeparator)
+	default:
+		encoder := json.NewEncoder(buf)
+		encoder.SetEscapeHTML(false)
+		err := encoder.Encode(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return buf.Bytes(), nil
 }
 
 // MarshalsJSON is a custom json marshaller

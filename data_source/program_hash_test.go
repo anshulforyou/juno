@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	_ "embed"
@@ -38,7 +39,7 @@ func TestProgramHash(t *testing.T) {
 		},
 		{
 			class: classCairo10Bytes,
-			want:  hexToFelt("0x88562ac88adfc7760ff452d048d39d72978bcc0f8d7b0fcfb34f33970b3df3"),
+			want:  hexToFelt("0x88562ac88adfc7760ff452d048d39d72978bcc0f8d7b0fcfb34f33970b3df0"),
 		},
 	}
 
@@ -59,4 +60,30 @@ func TestProgramHash(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalJsonWithSeparators(t *testing.T) {
+	list := []int{1, 4, 5, 6}
+	json, err := MarshalJSONWithSeparators(list, ", ", ": ")
+	assert.NoError(t, err)
+	assert.Equal(t, `[1, 4, 5, 6]`, string(json))
+	/*
+		s := struct {
+			A int    `json:"asd"`
+			B string `json:"123"`
+		}{A: 5, B: "444"}
+		json, err = MarshalJSONWithSeparators(s, ", ", ": ")
+		assert.NoError(t, err)
+		assert.Equal(t, `{"123": "444", "asd": 5}`, string(json))
+	*/
+	hint := clients.Hints{
+		2:   "3333",
+		100: "asdads",
+	}
+
+	json, err = MarshalJSONWithSeparators(struct {
+		Hints clients.Hints
+	}{Hints: hint}, ", ", ": ")
+	assert.NoError(t, err)
+	assert.Equal(t, `{"123": "444", "asd": 5}`, string(json))
 }
