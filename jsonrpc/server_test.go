@@ -1,8 +1,10 @@
 package jsonrpc
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"reflect"
 	"testing"
 
@@ -354,11 +356,75 @@ func TestHandle(t *testing.T) {
 					"params" : { "num" : 5, "shouldError" : true } , "id" : 22}`,
 			res: `{"jsonrpc":"2.0","error":{"code":-32603,"message":""},"id":22}`,
 		},
+		{
+			req: `[]`,
+			res: `[]`,
+		},
+		{
+			req: `[{"jsonrpc" : "2.0", "method" : "method",
+					"params" : { "num" : 5 } , "id" : 5}]`,
+			res: `[{"jsonrpc":"2.0","result":{"doubled":10},"id":5}]`,
+		},
+		{
+			req: `[{"jsonrpc" : "2.0", "method" : "method",
+					"params" : { "num" : 5 } , "id" : 5},
+					{"jsonrpc" : "2.0", "method" : "method",
+					"params" : { "num" : 44 } , "id" : 6}]`,
+			res: `[{"jsonrpc":"2.0","result":{"doubled":10},"id":5},{"jsonrpc":"2.0","result":{"doubled":88},"id":6}]`,
+		},
+		{
+			req: `[{"jsonrpc" : "2.0", "method" : "method",
+					"params" : { "num" : 5 } , "id" : 5},
+					{"jsonrpc" : "2.0", "method" : "fail",
+					"params" : { "num" : 5 } , "id" : 7},
+					{"jsonrpc" : "2.0", "method" : "method",
+					"params" : { "num" : 44 } , "id" : 6}]`,
+			res: `[{"jsonrpc":"2.0","result":{"doubled":10},"id":5},{"jsonrpc":"2.0","error":{"code":-32601,"message":"method not found"},"id":7},{"jsonrpc":"2.0","result":{"doubled":88},"id":6}]`,
+		},
 	}
 
 	for _, test := range tests {
 		res, err := server.Handle([]byte(test.req))
 		assert.NoError(t, err)
 		assert.Equal(t, test.res, string(res))
+	}
+}
+
+func TestIsBatch(t *testing.T) {
+	tests := []struct {
+		req   string
+		batch bool
+		left  string
+	}{
+		{
+			req:   "{}",
+			batch: false,
+			left:  "{}",
+		},
+		{
+			req:   " \r\n\t{}",
+			batch: false,
+			left:  "{}",
+		},
+		{
+			req:   "[{},{}]",
+			batch: true,
+			left:  "[{},{}]",
+		},
+		{
+			req:   " \r\n\t[{},{}]",
+			batch: true,
+			left:  "[{},{}]",
+		},
+	}
+
+	for _, test := range tests {
+		reader := bytes.NewReader([]byte(test.req))
+		bufferedReader := bufio.NewReader(reader)
+		assert.Equal(t, test.batch, isBatch(bufferedReader), test.req)
+
+		left, err := io.ReadAll(bufferedReader)
+		assert.NoError(t, err)
+		assert.Equal(t, test.left, string(left))
 	}
 }

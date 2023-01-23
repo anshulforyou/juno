@@ -1,6 +1,7 @@
 package jsonrpc
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -24,6 +25,8 @@ type request struct {
 	Params  any    `json:"params"`
 	Id      any    `json:"id"`
 }
+
+type batch []json.RawMessage
 
 type response struct {
 	Version string    `json:"jsonrpc"`
@@ -146,23 +149,80 @@ func (s *Server) Handle(data []byte) ([]byte, error) {
 // It returns the response in a byte array, only returns an
 // error if it can not create the response byte array
 func (s *Server) HandleReader(reader io.Reader) ([]byte, error) {
-	res := response{
+	bufferedReader := bufio.NewReader(reader)
+
+	if !isBatch(bufferedReader) {
+		var res *response
+		req, err := newRequest(bufferedReader)
+		if err != nil {
+			res = &response{
+				Version: "2.0",
+				Error: &rpcError{
+					Code:    InvalidRequest,
+					Message: err.Error(),
+				},
+			}
+		} else {
+			res = s.handleRequest(req)
+		}
+
+		return json.Marshal(res)
+	} else {
+		batchReq := batch{}
+		batchRes := []json.RawMessage{}
+
+		if err := json.NewDecoder(bufferedReader).Decode(&batchReq); err != nil {
+			return nil, err
+		}
+
+		for _, rawReq := range batchReq {
+			if res, err := s.Handle(rawReq); err == nil { // todo: handle async
+				batchRes = append(batchRes, res)
+			}
+		}
+
+		return json.Marshal(batchRes)
+	}
+}
+
+func isBatch(reader *bufio.Reader) bool {
+	for {
+		char, err := reader.ReadByte()
+		if err != nil {
+			break
+		} else if char == ' ' || char == '\t' || char == '\r' || char == '\n' {
+			continue
+		} else {
+			reader.UnreadByte()
+			return char == '['
+		}
+	}
+
+	return false
+}
+
+func (s *Server) handleRequest(req *request) *response {
+	res := &response{
 		Version: "2.0",
+		Id:      req.Id,
 	}
-	req, err := newRequest(reader)
-	if err != nil {
-		return respondWithErr(&res, InvalidRequest, err.Error())
-	}
-	res.Id = req.Id
 
 	calledMethod, found := s.methods[req.Method]
 	if !found {
-		return respondWithErr(&res, MethodNotFound, "method not found")
+		res.Error = &rpcError{
+			Code:    MethodNotFound,
+			Message: "method not found",
+		}
+		return res
 	}
 
 	args, err := buildArguments(req.Params, calledMethod.Handler, calledMethod.ParamNames)
 	if err != nil {
-		return respondWithErr(&res, InvalidParams, err.Error())
+		res.Error = &rpcError{
+			Code:    InvalidParams,
+			Message: err.Error(),
+		}
+		return res
 	}
 
 	tuple := reflect.ValueOf(calledMethod.Handler).Call(args)
@@ -171,11 +231,14 @@ func (s *Server) HandleReader(reader io.Reader) ([]byte, error) {
 	}
 
 	if errAny := tuple[1].Interface(); errAny != nil {
-		err = errAny.(error)
-		return respondWithErr(&res, InternalError, err.Error())
+		res.Error = &rpcError{
+			Code:    InternalError,
+			Message: errAny.(error).Error(),
+		}
+		return res
 	}
 
-	return json.Marshal(res)
+	return res
 }
 
 func buildArguments(params, handler any, paramNames []string) ([]reflect.Value, error) {
