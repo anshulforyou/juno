@@ -193,6 +193,8 @@ type Block struct {
 	Timestamp    uint64                `json:"timestamp"`
 	Version      string                `json:"starknet_version"`
 	Receipts     []*TransactionReceipt `json:"transaction_receipts"`
+	// Todo: Add sequencer address which is available to newer versions of blocks and equivalent
+	// tests.
 }
 
 func (c *GatewayClient) GetBlock(blockNumber uint64) (*Block, error) {
