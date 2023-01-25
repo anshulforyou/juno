@@ -54,3 +54,5 @@ func TestNew(t *testing.T) {
 		}
 	})
 }
+
+// Todo: Write test for gracefull run and shutdown
