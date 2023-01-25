@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NethermindEth/juno/core/blockchain"
+	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/jsonrpc"
 	"github.com/NethermindEth/juno/sync"
 	"github.com/NethermindEth/juno/utils"
@@ -89,6 +90,6 @@ func (n *Node) Shutdown() error {
 	return n.syncLoop.Shutdown()
 }
 
-func (n *Node) ChainId() (any, error) {
-	return fmt.Sprintf("0x%s", n.cfg.Network.ChainId().Text(16)), nil
+func (n *Node) ChainId() (*felt.Felt, error) {
+	return n.cfg.Network.ChainId(), nil
 }

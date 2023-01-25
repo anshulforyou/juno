@@ -126,7 +126,7 @@ func TestServer_RegisterMethod(t *testing.T) {
 		},
 		"int return": {
 			handler: func(param1, param2 int) (int, int) { return 0, 0 },
-			want:    "first return value must be an interface",
+			want:    "second return value must be an error",
 		},
 		"no error return": {
 			handler: func(param1, param2 int) (any, int) { return 0, 0 },
@@ -139,7 +139,7 @@ func TestServer_RegisterMethod(t *testing.T) {
 		assert.EqualError(t, err, test.want, desc)
 	}
 
-	err := server.RegisterMethod("method", nil, func(param1, param2 int) (any, error) { return 0, nil })
+	err := server.RegisterMethod("method", nil, func(param1, param2 int) (int, error) { return 0, nil })
 	assert.NoError(t, err)
 }
 

@@ -114,9 +114,6 @@ func (s *Server) RegisterMethod(name string, paramNames []string, handler any) e
 	if handlerT.NumOut() != 2 {
 		return errors.New("handler must return 2 values")
 	}
-	if handlerT.Out(0).Kind() != reflect.Interface {
-		return errors.New("first return value must be an interface")
-	}
 	if !handlerT.Out(1).Implements(reflect.TypeOf((*error)(nil)).Elem()) {
 		return errors.New("second return value must be an error")
 	}
