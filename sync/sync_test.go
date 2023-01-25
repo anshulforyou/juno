@@ -1,10 +1,14 @@
 package sync
 
 import (
+	"bytes"
 	_ "embed"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/NethermindEth/juno/blockchain"
 	"github.com/NethermindEth/juno/clients"
@@ -15,27 +19,74 @@ import (
 	"github.com/NethermindEth/juno/utils"
 )
 
-/*
+func TestSyncBlocks(t *testing.T) {
+	testBlockchain := func(t *testing.T, testDB db.DB, fakeData *fakeStarkNetData) bool {
+		return assert.NoError(t, testDB.View(func(txn db.Transaction) error {
+			headBlockBinary, err := txn.Get(db.HeadBlock.Key())
+			if err != nil {
+				return err
+			}
 
-Todo:
-- Get the fake StarkNetData to serve one block
-	- For the above you need to have a head of the block in blockchain
-	- You need to make the blockchain accept a db/transaction
-	- Then get it to store in the fake db
-	- Write todos for the verify and Store function
-Test Cases to enumerate:
-1. Sync from couple of blocks
-2. Start from non empty db and sync couple of blocks
-3. Stop syncing when error occurs
-4. Consider testing some new block which involve changes to the block structure
-*/
+			headBlock := new(core.Block)
+			if err = gob.NewDecoder(bytes.NewReader(headBlockBinary)).Decode(headBlock); err != nil {
+				return err
+			}
 
-func testSyncBlocks(t *testing.T) {
-	bc := blockchain.NewBlockchain(db.NewTestDb(), utils.MAINNET)
-	fakeData := newFakeStarkNetData()
-	synchronizer := NewSynchronizer(bc, fakeData)
-	synchronizer.SyncBlocks()
-	// assert.NoError(t, err)
+			height := int(headBlock.Number)
+			for height >= 0 {
+				b, err := fakeData.BlockByNumber(uint64(height))
+				if err != nil {
+					return err
+				}
+
+				dbKey := blockchain.BlockDbKey{Number: b.Number, Hash: b.Hash}
+				key, err := dbKey.MarshalBinary()
+				if err != nil {
+					return err
+				}
+
+				blockBinary, err := txn.Get(key)
+				if err != nil {
+					return err
+				}
+
+				block := new(core.Block)
+				if err = gob.NewDecoder(bytes.NewReader(blockBinary)).Decode(block); err != nil {
+					return err
+				}
+
+				assert.Equal(t, b, block)
+				height--
+			}
+			return nil
+		}))
+	}
+	t.Run("sync multiple blocks in an empty db", func(t *testing.T) {
+		testDB := db.NewTestDb()
+		bc, err := blockchain.NewBlockchain(testDB, utils.MAINNET)
+		assert.NoError(t, err)
+		fakeData := newFakeStarkNetData()
+		synchronizer := NewSynchronizer(bc, fakeData)
+		assert.Error(t, synchronizer.SyncBlocks())
+
+		testBlockchain(t, testDB, fakeData)
+	})
+	t.Run("sync multiple blocks in a non-empty db", func(t *testing.T) {
+		testDB := db.NewTestDb()
+		bc, err := blockchain.NewBlockchain(testDB, utils.MAINNET)
+		assert.NoError(t, err)
+		fakeData := newFakeStarkNetData()
+		b0, err := fakeData.BlockByNumber(0)
+		assert.NoError(t, err)
+		s0, err := fakeData.StateUpdate(0)
+		assert.NoError(t, err)
+		assert.NoError(t, bc.Store(b0, s0))
+
+		synchronizer := NewSynchronizer(bc, fakeData)
+		assert.Error(t, synchronizer.SyncBlocks())
+
+		testBlockchain(t, testDB, fakeData)
+	})
 }
 
 type fakeStarkNetData struct {
