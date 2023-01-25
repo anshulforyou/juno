@@ -21,7 +21,6 @@ type Blockchain struct {
 	head     *core.Block
 	network  utils.Network
 	database db.DB
-	state    *state.State
 	// todo: much more
 }
 
@@ -77,46 +76,80 @@ func (k *blockDbKey) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// Store takes a block and state update and performs sanity checks before putting in the database.
 func (b *Blockchain) Store(block *core.Block, stateUpdate *core.StateUpdate) error {
+	if err := b.verifyBlock(block, stateUpdate); err != nil {
+		return err
+	}
+	if err := state.NewState(b.database).Update(stateUpdate); err != nil {
+		return err
+	}
+
+	key := &blockDbKey{block.Number, block.Hash}
+	bKey, err := key.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	blockBinary, err := cbor.Marshal(block)
+	if err != nil {
+		return err
+	}
+
+	if err = b.database.Update(func(txn db.Transaction) error {
+		if err = txn.Set(db.HeadBlock.Key(), blockBinary); err != nil {
+			return err
+		}
+		return txn.Set(bKey, blockBinary)
+	}); err != nil {
+		return err
+	}
+
 	b.Lock()
-	defer b.Unlock()
-
-	/*
-		Todo (tentative plan):
-		- Call verifyBlockAndStateUpdate()
-		- Apply the StateDiff and if the State.Update
-		- Store the block using either Cbor
-			- prefix for block hash has been created in bucket.go
-		- Update the head
-	*/
-
 	b.head = block
+	b.Unlock()
 	return nil
 }
 
-func (b *Blockchain) verifyBlockAndStateUpdate(block *core.Block,
-	stateUpdate *core.StateUpdate,
-) error {
-	/*
-			Todo (tentative plan):
-			- Sanity checks:
-				- Check parent hash matches head hash
-				- Check the block hash in block matches the block hash in state update
-				- Check the GlobalStateRoot matches the the NewRoot in StateUpdate
-			- Block Checks:
-				- Check block hash contained in the Block matches the block hash when it is computed
-		          manually
-					- Currently, There is no Hash field on the block this needs to be added.
-					- BlockHash function should be made Static
-						- These static functions which includes TransactionCommitment,
-						  EventCommitment and BlockHash should be moved to utils package
-			- Transaction and TransactionReceipts:
-				- When Block is changed to include a list of Transaction and TransactionReceipts
-					- Further checks would need to be added to ensure Transaction Hash has been
-					  computed properly.
-					- Sanity check would need to include checks which ensure there is same number
-					  of Transactions and TransactionReceipts.
+type ErrIncompatibleBlockAndStateUpdate struct {
+	reason string
+}
 
+func (e ErrIncompatibleBlockAndStateUpdate) Error() string {
+	return fmt.Sprintf("incompatible block and state update: %v", e.reason)
+}
+
+func (b *Blockchain) verifyBlock(block *core.Block, stateUpdate *core.StateUpdate) error {
+	/*
+		Todo: Transaction and TransactionReceipts
+			- When Block is changed to include a list of Transaction and TransactionReceipts
+			- Further checks would need to be added to ensure Transaction Hash has been computed
+				properly.
+			- Sanity check would need to include checks which ensure there is same number of
+				Transactions and TransactionReceipts.
 	*/
+	b.RLock()
+	if !block.ParentHash.Equal(b.head.Hash) {
+		return errors.New("block's parent hash does not match head block hash")
+	}
+	b.RUnlock()
+	if !block.Hash.Equal(stateUpdate.BlockHash) {
+		return ErrIncompatibleBlockAndStateUpdate{"block hashes do not match"}
+	}
+	if !block.GlobalStateRoot.Equal(stateUpdate.NewRoot) {
+		return ErrIncompatibleBlockAndStateUpdate{
+			"block's GlobalStateRoot does not match state update's NewRoot",
+		}
+	}
+
+	h, err := core.BlockHash(block, b.network)
+	if !errors.Is(err, core.ErrUnverifiableBlock{}) {
+		return err
+	}
+
+	if h != nil && !block.Hash.Equal(h) {
+		return errors.New("incorrect block hash")
+	}
+
 	return nil
 }
