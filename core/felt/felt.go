@@ -9,12 +9,12 @@ import (
 )
 
 type Felt struct {
-	val fp.Element
+	Val fp.Element
 }
 
 func NewFelt(element *fp.Element) *Felt {
 	return &Felt{
-		val: *element,
+		Val: *element,
 	}
 }
 
@@ -35,7 +35,7 @@ var bigIntPool = sync.Pool{
 
 // Impl returns the underlying field element type
 func (z *Felt) Impl() *fp.Element {
-	return &z.val
+	return &z.Val
 }
 
 // UnmarshalJSON accepts numbers and strings as input.
@@ -67,7 +67,7 @@ func (z *Felt) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	z.val.SetBigInt(vv)
+	z.Val.SetBigInt(vv)
 
 	// release object into pool
 	bigIntPool.Put(vv)
@@ -76,92 +76,92 @@ func (z *Felt) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON forwards the call to underlying field element implementation
 func (z *Felt) MarshalJSON() ([]byte, error) {
-	return z.val.MarshalJSON()
+	return z.Val.MarshalJSON()
 }
 
 // SetInterface forwards the call to underlying field element implementation
 func (z *Felt) SetInterface(i1 interface{}) (*Felt, error) {
-	_, err := z.val.SetInterface(i1)
+	_, err := z.Val.SetInterface(i1)
 	return z, err
 }
 
 // SetBytes forwards the call to underlying field element implementation
 func (z *Felt) SetBytes(e []byte) *Felt {
-	z.val.SetBytes(e)
+	z.Val.SetBytes(e)
 	return z
 }
 
 // SetString forwards the call to underlying field element implementation
 func (z *Felt) SetString(number string) (*Felt, error) {
-	_, err := z.val.SetString(number)
+	_, err := z.Val.SetString(number)
 	return z, err
 }
 
 // SetUint64 forwards the call to underlying field element implementation
 func (z *Felt) SetUint64(v uint64) *Felt {
-	z.val.SetUint64(v)
+	z.Val.SetUint64(v)
 	return z
 }
 
 // SetRandom forwards the call to underlying field element implementation
 func (z *Felt) SetRandom() (*Felt, error) {
-	_, err := z.val.SetRandom()
+	_, err := z.Val.SetRandom()
 	return z, err
 }
 
 // String forwards the call to underlying field element implementation
 func (z *Felt) String() string {
-	return z.val.String()
+	return z.Val.String()
 }
 
 // Text forwards the call to underlying field element implementation
 func (z *Felt) Text(base int) string {
-	return z.val.Text(base)
+	return z.Val.Text(base)
 }
 
 // Equal forwards the call to underlying field element implementation
 func (z *Felt) Equal(x *Felt) bool {
-	return z.val.Equal(&x.val)
+	return z.Val.Equal(&x.Val)
 }
 
 // Marshal forwards the call to underlying field element implementation
 func (z *Felt) Marshal() []byte {
-	return z.val.Marshal()
+	return z.Val.Marshal()
 }
 
 // Bytes forwards the call to underlying field element implementation
 func (z *Felt) Bytes() [32]byte {
-	return z.val.Bytes()
+	return z.Val.Bytes()
 }
 
 // ToRegular forwards the call to underlying field element implementation
 func (z Felt) ToRegular() Felt {
-	z.val = z.val.ToRegular()
+	z.Val = z.Val.ToRegular()
 	return z
 }
 
 // IsOne forwards the call to underlying field element implementation
 func (z *Felt) IsOne() bool {
-	return z.val.IsOne()
+	return z.Val.IsOne()
 }
 
 // IsZero forwards the call to underlying field element implementation
 func (z *Felt) IsZero() bool {
-	return z.val.IsZero()
+	return z.Val.IsZero()
 }
 
 // Bit forwards the call to underlying field element implementation
 func (z *Felt) Bit(i uint64) uint64 {
-	return z.val.Bit(i)
+	return z.Val.Bit(i)
 }
 
 // Add forwards the call to underlying field element implementation
 func (z *Felt) Add(x, y *Felt) *Felt {
-	z.val.Add(&x.val, &y.val)
+	z.Val.Add(&x.Val, &y.Val)
 	return z
 }
 
 // Halve forwards the call to underlying field element implementation
 func (z *Felt) Halve() {
-	z.val.Halve()
+	z.Val.Halve()
 }
