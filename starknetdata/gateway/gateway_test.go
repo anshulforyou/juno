@@ -11,7 +11,7 @@ import (
 )
 
 func TestAdaptBlock(t *testing.T) {
-	blockJson, err := os.ReadFile("testdata/block_11817.json")
+	blockJson, err := os.ReadFile("testdata/block_19199_mainnet.json")
 	if err != nil {
 		t.Fatalf("unexpected error reading from testdata file: %s", err)
 	}
@@ -33,6 +33,7 @@ func TestAdaptBlock(t *testing.T) {
 	assert.True(t, block.Timestamp.Equal(new(felt.Felt).SetUint64(response.Timestamp)))
 	assert.Equal(t, block.TransactionCount, new(felt.Felt).SetUint64(uint64(len(response.Transactions))))
 	assert.Equal(t, block.ProtocolVersion, new(felt.Felt))
+	assert.True(t, block.SequencerAddress.Equal(response.SequencerAddress))
 	var extraData *felt.Felt
 	assert.Equal(t, block.ExtraData, extraData)
 	// TODO test transaction commitment...?

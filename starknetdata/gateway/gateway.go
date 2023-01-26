@@ -66,6 +66,7 @@ func AdaptBlock(response *clients.Block) (*core.Block, error) {
 		EventCommitment:       eventCommitment,
 		ProtocolVersion:       new(felt.Felt),
 		ExtraData:             nil,
+		SequencerAddress:      response.SequencerAddress,
 	}, nil
 }
 
