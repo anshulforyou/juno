@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"sync/atomic"
+	"time"
 
 	"github.com/NethermindEth/juno/blockchain"
 	"github.com/NethermindEth/juno/starknetdata"
@@ -57,25 +58,33 @@ func (s *Synchronizer) SyncBlocks() error {
 			if h := s.Blockchain.Height(); h != nil {
 				nextHeight = *h + 1
 			}
+
+			start := time.Now()
 			block, err := s.StarkNetData.BlockByNumber(nextHeight)
 			if err != nil {
 				return err
 			}
+			elapsed := time.Since(start)
 			log.Println()
-			log.Printf("Fetched Block: Number: %d, Hash: %s", block.Number, block.Hash.Text(16))
+			log.Printf("Fetched Block: Number: %d, Hash: %s took %s", block.Number, block.Hash.Text(16), elapsed)
+			start = time.Now()
 			stateUpdate, err := s.StarkNetData.StateUpdate(nextHeight)
 			if err != nil {
 				return err
 			}
-			log.Printf("Fetched StateUpdate: Hash: %s, NewRoot: %s", stateUpdate.BlockHash.Text(16),
-				stateUpdate.NewRoot.Text(16))
+			elapsed = time.Since(start)
+			log.Printf("Fetched StateUpdate: Hash: %s, NewRoot: %s took %s", stateUpdate.BlockHash.Text(16),
+				stateUpdate.NewRoot.Text(16), elapsed)
+			start = time.Now()
 			if err = s.Blockchain.Store(block, stateUpdate); err != nil {
 				return err
 			}
+			elapsed = time.Since(start)
 			log.Printf("Stored Block: Number: %d, Hash: %s", block.Number, block.Hash.Text(16))
 			log.Printf("Applied StateUpdate: Hash: %s, NewRoot: %s",
 				stateUpdate.BlockHash.Text(16),
 				stateUpdate.NewRoot.Text(16))
+			log.Printf("Combined they took %s", elapsed)
 		}
 	}
 }

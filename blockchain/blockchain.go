@@ -6,7 +6,9 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
@@ -100,12 +102,19 @@ func (b *Blockchain) Height() *uint64 {
 
 // Store takes a block and state update and performs sanity checks before putting in the database.
 func (b *Blockchain) Store(block *core.Block, stateUpdate *core.StateUpdate) error {
+	start := time.Now()
 	if err := b.VerifyBlock(block, stateUpdate); err != nil {
 		return err
 	}
+	elapsed := time.Since(start)
+	log.Printf("Verify took %s", elapsed)
+
+	start = time.Now()
 	if err := state.NewState(b.database).Update(stateUpdate); err != nil {
 		return err
 	}
+	elapsed = time.Since(start)
+	log.Printf("State update took %s", elapsed)
 
 	key := &BlockDbKey{block.Number, block.Hash}
 	bKey, err := key.MarshalBinary()
