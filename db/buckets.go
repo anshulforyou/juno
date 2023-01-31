@@ -16,6 +16,7 @@ const (
 	ContractNonce     // contract nonce
 	HeadBlock         // Head of the blockchain
 	Blocks
+	TransactionsIndexByHash // maps transaction hashes to block number and index
 )
 
 // Key flattens a prefix and series of byte arrays into a single []byte.
