@@ -9,6 +9,7 @@ const (
 	MAINNET
 	GOERLI2
 	INTEGRATION
+	UNITTEST
 )
 
 func (n Network) String() string {
@@ -21,6 +22,8 @@ func (n Network) String() string {
 		return "goerli2"
 	case INTEGRATION:
 		return "integration"
+	case UNITTEST:
+		return "unittest"
 	default:
 		return ""
 	}
@@ -36,6 +39,8 @@ func (n Network) URL() string {
 		return "https://alpha4-2.starknet.io"
 	case INTEGRATION:
 		return "https://external.integration.starknet.io"
+	case UNITTEST:
+		return "https://localhost"
 	default:
 		return ""
 	}
@@ -51,6 +56,8 @@ func (n Network) ChainId() *felt.Felt {
 		return new(felt.Felt).SetBytes([]byte("SN_GOERLI2"))
 	case INTEGRATION:
 		return new(felt.Felt).SetBytes([]byte("SN_INTEGRATION"))
+	case UNITTEST:
+		return new(felt.Felt).SetBytes([]byte("SN_UNITTEST"))
 	default:
 		return nil
 	}
