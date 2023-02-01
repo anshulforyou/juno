@@ -210,7 +210,7 @@ func getTransactionReceipts(t *testing.T) {
 	}
 	receiptsInterface := blck156000["transaction_receipts"].([]interface{})
 	txns := blck156000["transactions"].([]interface{})
-	receipt156000 := generateReceipt(t, txns, receiptsInterface)
+	receipt156000 := generateReceipt(txns, receiptsInterface)
 
 	// https://alpha4.starknet.io/feeder_gateway/get_block?blockNumber=1
 	var blck1Goerli map[string]interface{}
@@ -219,7 +219,7 @@ func getTransactionReceipts(t *testing.T) {
 	}
 	receiptsInterface = blck1Goerli["transaction_receipts"].([]interface{})
 	txns = blck1Goerli["transactions"].([]interface{})
-	receipt1Goerli := generateReceipt(t, txns, receiptsInterface)
+	receipt1Goerli := generateReceipt(txns, receiptsInterface)
 
 	// https://external.integration.starknet.io/feeder_gateway/get_block?blockNumber=1
 	var blck1Integration map[string]interface{}
@@ -228,7 +228,7 @@ func getTransactionReceipts(t *testing.T) {
 	}
 	receiptsInterface = blck1Integration["transaction_receipts"].([]interface{})
 	txns = blck1Integration["transactions"].([]interface{})
-	receipt1Integration := generateReceipt(t, txns, receiptsInterface)
+	receipt1Integration := generateReceipt(txns, receiptsInterface)
 
 	// https://alpha-mainnet.starknet.io/feeder_gateway/get_block?blockNumber=16789
 	var blck16789Main map[string]interface{}
@@ -237,7 +237,7 @@ func getTransactionReceipts(t *testing.T) {
 	}
 	receiptsInterface = blck16789Main["transaction_receipts"].([]interface{})
 	txns = blck16789Main["transactions"].([]interface{})
-	receipt16789Main := generateReceipt(t, txns, receiptsInterface)
+	receipt16789Main := generateReceipt(txns, receiptsInterface)
 
 	receipts = [][]*TransactionReceipt{
 		receipt156000,
@@ -247,7 +247,7 @@ func getTransactionReceipts(t *testing.T) {
 	}
 }
 
-func generateReceipt(t *testing.T, txns []interface{}, receiptsInterface []interface{}) []*TransactionReceipt {
+func generateReceipt(txns []interface{}, receiptsInterface []interface{}) []*TransactionReceipt {
 	receipts := make([]*TransactionReceipt, len(txns))
 
 	transactionType := func(t string) TransactionType {
