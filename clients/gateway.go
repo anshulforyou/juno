@@ -8,23 +8,64 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/NethermindEth/juno/core/felt"
 )
 
+type Backoff func(prevWait time.Duration) time.Duration
+
 type GatewayClient struct {
-	baseUrl string
+	url     string
+	backoff Backoff
+	maxWait time.Duration
+	minWait time.Duration
 }
 
-func NewGatewayClient(baseUrl string) *GatewayClient {
-	return &GatewayClient{
-		baseUrl: baseUrl,
+type GatewayOption func(*GatewayClient)
+
+func WithBackoff(b Backoff) GatewayOption {
+	return func(c *GatewayClient) {
+		c.backoff = b
 	}
+}
+
+func WithMaxWait(d time.Duration) GatewayOption {
+	return func(c *GatewayClient) {
+		c.maxWait = d
+	}
+}
+
+func WithMinWait(d time.Duration) GatewayOption {
+	return func(c *GatewayClient) {
+		c.minWait = d
+	}
+}
+
+// https://cloud.google.com/iot/docs/how-tos/exponential-backoff
+func ExponentialBackoff(wait time.Duration) time.Duration {
+	time.Sleep(wait)
+	return wait * 2
+}
+
+func NewGatewayClient(url string, opts ...GatewayOption) *GatewayClient {
+	c := &GatewayClient{
+		url:     url,
+		backoff: ExponentialBackoff,
+		maxWait: 30 * time.Minute,
+		minWait: 1 * time.Second,
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 // `buildQueryString` builds the query url with encoded parameters
 func (c *GatewayClient) buildQueryString(endpoint string, args map[string]string) string {
-	base, err := url.Parse(c.baseUrl)
+	base, err := url.Parse(c.url)
 	if err != nil {
 		panic("Malformed feeder gateway base URL")
 	}
@@ -42,7 +83,21 @@ func (c *GatewayClient) buildQueryString(endpoint string, args map[string]string
 
 // get performs a "GET" http request with the given URL and returns the response body
 func (c *GatewayClient) get(queryUrl string) ([]byte, error) {
-	res, err := http.Get(queryUrl)
+	var res *http.Response
+	var err error
+	wait := c.minWait
+	for {
+		res, err = http.Get(queryUrl)
+		if res != nil && res.StatusCode == http.StatusOK {
+			break
+		}
+
+		if wait <= c.maxWait {
+			wait = c.backoff(wait)
+		} else {
+			break
+		}
+	}
 	if err != nil {
 		return nil, err
 	} else if res.StatusCode != http.StatusOK {

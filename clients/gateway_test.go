@@ -7,12 +7,20 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/stretchr/testify/assert"
 )
 
 const mockUrl = "https://mock_gateway.io/"
+
+func testClient(url string) *GatewayClient {
+	noOpBackoff := func(d time.Duration) time.Duration {
+		return 0
+	}
+	return NewGatewayClient(url, WithBackoff(noOpBackoff), WithMaxWait(0), WithMinWait(1*time.Second))
+}
 
 func TestStateUpdateUnmarshal(t *testing.T) {
 	jsonData := []byte(`{
@@ -332,18 +340,13 @@ func TestClassUnmarshal(t *testing.T) {
 	assert.Equal(t, "0.10.1", class.Program.CompilerVersion)
 }
 
-func TestNewGatewayClient(t *testing.T) {
-	gatewayClient := NewGatewayClient(mockUrl)
-	assert.Equal(t, mockUrl, gatewayClient.baseUrl)
-}
-
 func TestBuildQueryString(t *testing.T) {
-	gatewayClient := NewGatewayClient(mockUrl)
+	gatewayClient := testClient(mockUrl)
 	endpoint := ""
 	args := make(map[string]string)
 	args["a"] = "b"
 	query := gatewayClient.buildQueryString(endpoint, args)
-	assert.Equal(t, mockUrl, gatewayClient.baseUrl)
+	assert.Equal(t, mockUrl, gatewayClient.url)
 	assert.Equal(t, mockUrl+"?a=b", query)
 }
 
@@ -353,8 +356,7 @@ func TestBuildQueryString_WithErrorUrl(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	baseUrl := "https\t://mock_gateway.io"
-	gatewayClient := NewGatewayClient(baseUrl)
+	gatewayClient := testClient("https\t://mock_gateway.io/")
 	gatewayClient.buildQueryString("/test_fail", map[string]string{})
 }
 
@@ -410,7 +412,7 @@ func TestGetStateUpdate(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	gatewayClient := NewGatewayClient(srv.URL)
+	gatewayClient := testClient(srv.URL)
 
 	t.Run("Test normal case", func(t *testing.T) {
 		stateUpdate, err := gatewayClient.GetStateUpdate(10)
@@ -435,18 +437,18 @@ func TestGet(t *testing.T) {
 	}))
 	defer srv.Close()
 	t.Run("Test normal get", func(t *testing.T) {
-		gatewayClient := NewGatewayClient(srv.URL)
+		gatewayClient := testClient(srv.URL)
 		expectPath := "/normal_get"
 		path, err := gatewayClient.get(srv.URL + expectPath)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, expectPath, string(path))
 	})
 	t.Run("Test unnormal get", func(t *testing.T) {
-		gatewayClient := NewGatewayClient(srv.URL)
+		gatewayClient := testClient(srv.URL)
 		expectPath := "/unnormal_get"
 		path, err := gatewayClient.get("https\t://" + expectPath)
 		assert.Nil(t, path)
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -505,14 +507,14 @@ func TestGetTransaction(t *testing.T) {
 	defer srv.Close()
 	t.Run("Test normal case", func(t *testing.T) {
 		transaction_hash, _ := new(felt.Felt).SetString("0x00")
-		gatewayClient := NewGatewayClient(srv.URL)
+		gatewayClient := testClient(srv.URL)
 		actualStatus, err := gatewayClient.GetTransaction(transaction_hash)
 		assert.Equal(t, nil, err, "Unexpected error")
 		assert.Equal(t, *actualStatus, transactionStatus)
 	})
 	t.Run("Test case when transaction_hash not exit", func(t *testing.T) {
 		transaction_hash, _ := new(felt.Felt).SetString("0xffff")
-		gatewayClient := NewGatewayClient(srv.URL)
+		gatewayClient := testClient(srv.URL)
 		actualStatus, err := gatewayClient.GetTransaction(transaction_hash)
 		assert.Nil(t, actualStatus, "Unexpected error")
 		assert.NotNil(t, err)
@@ -550,7 +552,7 @@ func TestGetBlock(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	gatewayClient := NewGatewayClient(srv.URL)
+	gatewayClient := testClient(srv.URL)
 
 	t.Run("Test normal case", func(t *testing.T) {
 		blcokNumber := uint64(11817)
@@ -600,7 +602,7 @@ func TestGetClassDefinition(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	gatewayClient := NewGatewayClient(srv.URL)
+	gatewayClient := testClient(srv.URL)
 
 	t.Run("Test normal case", func(t *testing.T) {
 		classHash, _ := new(felt.Felt).SetString("0x01efa8f8")
@@ -622,7 +624,7 @@ func TestHttpError(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
-	gatewayClient := NewGatewayClient(srv.URL)
+	gatewayClient := testClient(srv.URL)
 
 	t.Run("HTTP err in GetBlock", func(t *testing.T) {
 		_, err := gatewayClient.GetBlock(0)
@@ -643,4 +645,23 @@ func TestHttpError(t *testing.T) {
 		_, err := gatewayClient.GetStateUpdate(0)
 		assert.EqualError(t, err, "500 Internal Server Error")
 	})
+}
+
+func TestBackoffFailure(t *testing.T) {
+	maxRetries := 5
+	try := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		try += 1
+	}))
+	defer srv.Close()
+
+	backoff := func(prevWait time.Duration) time.Duration {
+		return prevWait + time.Second
+	}
+	c := NewGatewayClient(srv.URL, WithBackoff(backoff), WithMinWait(1*time.Second), WithMaxWait(time.Duration(maxRetries)*time.Second))
+
+	_, err := c.GetBlock(0)
+	assert.EqualError(t, err, "500 Internal Server Error")
+	assert.Equal(t, maxRetries+1, try) // we have retried `maxRetries` times
 }
