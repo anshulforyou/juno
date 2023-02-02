@@ -235,11 +235,13 @@ func declareTransactionHash(d *DeclareTransaction, network utils.Network) (*felt
 	return nil, errors.New("invalid transaction version")
 }
 
+const commitmentTrieHeight uint = 64
+
 // TransactionCommitment is the root of a height 64 binary Merkle Patricia tree of the
 // transaction hashes and signatures in a block.
 func TransactionCommitment(receipts []*TransactionReceipt) (*felt.Felt, error) {
 	var transactionCommitment *felt.Felt
-	return transactionCommitment, trie.RunOnTempTrie(64, func(trie *trie.Trie) error {
+	return transactionCommitment, trie.RunOnTempTrie(commitmentTrieHeight, func(trie *trie.Trie) error {
 		zeroFelt := new(felt.Felt)
 		for i, receipt := range receipts {
 			signaturesHash := crypto.Pedersen(zeroFelt, zeroFelt)
@@ -264,7 +266,7 @@ func TransactionCommitment(receipts []*TransactionReceipt) (*felt.Felt, error) {
 func EventCommitmentAndCount(receipts []*TransactionReceipt) (*felt.Felt, uint64, error) {
 	var eventCommitment *felt.Felt // root of a height 64 binary Merkle Patricia tree of the events in a block.
 	var eventCount uint64          // number of events in a block.
-	return eventCommitment, eventCount, trie.RunOnTempTrie(64, func(trie *trie.Trie) error {
+	return eventCommitment, eventCount, trie.RunOnTempTrie(commitmentTrieHeight, func(trie *trie.Trie) error {
 		for _, receipt := range receipts {
 			for _, event := range receipt.Events {
 				eventHash := crypto.PedersenArray(
