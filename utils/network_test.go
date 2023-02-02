@@ -29,13 +29,13 @@ func TestNetwork(t *testing.T) {
 		for _, n := range networks {
 			switch n {
 			case GOERLI:
-				assert.Equal(t, "https://alpha4.starknet.io", n.URL())
+				assert.Equal(t, "https://alpha4.starknet.io/feeder_gateway/", n.URL())
 			case MAINNET:
-				assert.Equal(t, "https://alpha-mainnet.starknet.io", n.URL())
+				assert.Equal(t, "https://alpha-mainnet.starknet.io/feeder_gateway/", n.URL())
 			case GOERLI2:
-				assert.Equal(t, "https://alpha4-2.starknet.io", n.URL())
+				assert.Equal(t, "https://alpha4-2.starknet.io/feeder_gateway/", n.URL())
 			case INTEGRATION:
-				assert.Equal(t, "https://external.integration.starknet.io", n.URL())
+				assert.Equal(t, "https://external.integration.starknet.io/feeder_gateway/", n.URL())
 			default:
 				assert.Equal(t, "", n.URL())
 

@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const mockUrl = "https://mock_gateway.io/"
+
 func TestStateUpdateUnmarshal(t *testing.T) {
 	jsonData := []byte(`{
   "block_hash": "0x47c3637b57c2b079b93c61539950c17e868a28f46cdef28f88521067f21e943",
@@ -331,21 +333,18 @@ func TestClassUnmarshal(t *testing.T) {
 }
 
 func TestNewGatewayClient(t *testing.T) {
-	baseUrl := "https://mock_gateway.io"
-	gatewayClient := NewGatewayClient(baseUrl)
-	assert.Equal(t, baseUrl+feederGatewayPath, gatewayClient.baseUrl)
+	gatewayClient := NewGatewayClient(mockUrl)
+	assert.Equal(t, mockUrl, gatewayClient.baseUrl)
 }
 
 func TestBuildQueryString(t *testing.T) {
-	baseUrl := "https://mock_gateway.io"
-	gatewayClient := NewGatewayClient(baseUrl)
+	gatewayClient := NewGatewayClient(mockUrl)
 	endpoint := ""
 	args := make(map[string]string)
 	args["a"] = "b"
 	query := gatewayClient.buildQueryString(endpoint, args)
-	feederGatewayUrl := baseUrl + feederGatewayPath
-	assert.Equal(t, feederGatewayUrl, gatewayClient.baseUrl)
-	assert.Equal(t, feederGatewayUrl+"?a=b", query)
+	assert.Equal(t, mockUrl, gatewayClient.baseUrl)
+	assert.Equal(t, mockUrl+"?a=b", query)
 }
 
 func TestBuildQueryString_WithErrorUrl(t *testing.T) {
@@ -394,7 +393,7 @@ func TestGetStateUpdate(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case feederGatewayPath + "get_state_update":
+		case "/get_state_update":
 			{
 				queryMap, err := url.ParseQuery(r.URL.RawQuery)
 				assert.Equal(t, nil, err, "No Query value")
@@ -486,7 +485,7 @@ func TestGetTransaction(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case feederGatewayPath + "get_transaction":
+		case "/get_transaction":
 			{
 				queryMap, err := url.ParseQuery(r.URL.RawQuery)
 				assert.Equal(t, nil, err, "No Query value")
@@ -534,7 +533,7 @@ func TestGetBlock(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case feederGatewayPath + "get_block":
+		case "/get_block":
 			{
 				queryMap, err := url.ParseQuery(r.URL.RawQuery)
 				assert.Equal(t, nil, err, "No Query value")
@@ -582,7 +581,7 @@ func TestGetClassDefinition(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case feederGatewayPath + "get_class_by_hash":
+		case "/get_class_by_hash":
 			{
 				queryMap, err := url.ParseQuery(r.URL.RawQuery)
 				assert.Equal(t, nil, err, "No Query value")
