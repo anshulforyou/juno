@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/NethermindEth/juno/clients"
+	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -25,15 +27,11 @@ var (
 
 func TestAdaptBlock(t *testing.T) {
 	var response *clients.Block
-	err := json.Unmarshal(blockJson, &response)
-	if err != nil {
-		t.Fatalf("unexpected unmarshal error: %s", err)
-	}
+	require.NoError(t, json.Unmarshal(blockJson, &response))
 
 	block, err := AdaptBlock(response)
-	if !assert.NoError(t, err) {
-		t.Errorf("unexpected error on AdaptBlock: %s", err)
-	}
+	require.NoError(t, err)
+
 	assert.True(t, block.Hash.Equal(response.Hash))
 	assert.True(t, block.ParentHash.Equal(response.ParentHash))
 	assert.Equal(t, block.Number, response.Number)

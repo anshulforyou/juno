@@ -72,6 +72,8 @@ type TransactionReceipt struct {
 }
 
 type Transaction interface {
+	hash() *felt.Felt
+	signatures() []*felt.Felt
 	Type() string
 }
 
@@ -96,6 +98,14 @@ type DeployTransaction struct {
 
 func (d *DeployTransaction) Type() string {
 	return "DEPLOY"
+}
+
+func (d *DeployTransaction) hash() *felt.Felt {
+	return d.Hash
+}
+
+func (d *DeployTransaction) signatures() []*felt.Felt {
+	return make([]*felt.Felt, 0)
 }
 
 type InvokeTransaction struct {
@@ -127,6 +137,14 @@ func (i *InvokeTransaction) Type() string {
 	return "INVOKE_FUNCTION"
 }
 
+func (i *InvokeTransaction) hash() *felt.Felt {
+	return i.Hash
+}
+
+func (i *InvokeTransaction) signatures() []*felt.Felt {
+	return i.Signatures
+}
+
 type DeclareTransaction struct {
 	Hash *felt.Felt
 	// The class hash
@@ -151,14 +169,22 @@ func (d *DeclareTransaction) Type() string {
 	return "DECLARE"
 }
 
+func (d *DeclareTransaction) hash() *felt.Felt {
+	return d.Hash
+}
+
+func (d *DeclareTransaction) signatures() []*felt.Felt {
+	return d.Signatures
+}
+
 func TransactionHash(transaction Transaction, network utils.Network) (*felt.Felt, error) {
-	switch transaction.(type) {
+	switch t := transaction.(type) {
 	case *DeclareTransaction:
-		return declareTransactionHash(transaction.(*DeclareTransaction), network)
+		return declareTransactionHash(t, network)
 	case *InvokeTransaction:
-		return invokeTransactionHash(transaction.(*InvokeTransaction), network)
+		return invokeTransactionHash(t, network)
 	case *DeployTransaction:
-		return deployTransactionHash(transaction.(*DeployTransaction), network)
+		return deployTransactionHash(t, network)
 	default:
 		return nil, errors.New("unknown transaction type")
 	}
@@ -237,17 +263,20 @@ const commitmentTrieHeight uint = 64
 
 // TransactionCommitment is the root of a height 64 binary Merkle Patricia tree of the
 // transaction hashes and signatures in a block.
-func TransactionCommitment(receipts []*TransactionReceipt) (*felt.Felt, error) {
+func TransactionCommitment(transactions []Transaction) (*felt.Felt, error) {
 	var transactionCommitment *felt.Felt
 	return transactionCommitment, trie.RunOnTempTrie(commitmentTrieHeight, func(trie *trie.Trie) error {
 		zeroFelt := new(felt.Felt)
-		for i, receipt := range receipts {
+		for i, transaction := range transactions {
+			signatures := transaction.signatures()
+			hash := transaction.hash()
+
 			signaturesHash := crypto.Pedersen(zeroFelt, zeroFelt)
-			if receipt.Type == Invoke {
-				signaturesHash = crypto.PedersenArray(receipt.Signatures...)
+			if len(signatures) > 0 {
+				signaturesHash = crypto.PedersenArray(signatures...)
 			}
-			transactionAndSignatureHash := crypto.Pedersen(receipt.TransactionHash, signaturesHash)
-			if _, err := trie.Put(new(felt.Felt).SetUint64(uint64(i)), transactionAndSignatureHash); err != nil {
+
+			if _, err := trie.Put(new(felt.Felt).SetUint64(uint64(i)), crypto.Pedersen(hash, signaturesHash)); err != nil {
 				return err
 			}
 		}

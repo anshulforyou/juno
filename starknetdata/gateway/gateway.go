@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"errors"
+
 	"github.com/NethermindEth/juno/clients"
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
@@ -31,7 +33,7 @@ func (g *Gateway) BlockByNumber(blockNumber uint64) (*core.Block, error) {
 
 func AdaptBlock(response *clients.Block) (*core.Block, error) {
 	if response == nil {
-		return nil, nil
+		return nil, errors.New("nil client block")
 	}
 
 	// Receipts
@@ -47,7 +49,14 @@ func AdaptBlock(response *clients.Block) (*core.Block, error) {
 	}
 
 	// Transaction Commitment
-	txCommitment, err := core.TransactionCommitment(receipts)
+	transactions := make([]core.Transaction, len(response.Transactions))
+	for i, t := range response.Transactions {
+		transactions[i], err = adaptTransaction(t)
+		if err != nil {
+			return nil, err
+		}
+	}
+	txCommitment, err := core.TransactionCommitment(transactions)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +230,7 @@ func adaptInvokeTransaction(t *clients.Transaction) *core.InvokeTransaction {
 	}
 }
 
-// GetClass gets the class for a given class hash from the feeder gateway,
+// Class gets the class for a given class hash from the feeder gateway,
 // then adapts it to the core.Class type.
 func (g *Gateway) Class(classHash *felt.Felt) (*core.Class, error) {
 	response, err := g.client.GetClassDefinition(classHash)
