@@ -88,6 +88,17 @@ func (d *DeployTransaction) signature() []*felt.Felt {
 
 type InvokeTransaction struct {
 	Hash *felt.Felt
+	// The arguments that are passed to the validated and execute functions.
+	CallData []*felt.Felt
+	// Additional information given by the sender, used to validate the transaction.
+	Signature []*felt.Felt
+	// The maximum fee that the sender is willing to pay for the transaction
+	MaxFee *felt.Felt
+	// When the fields that comprise a transaction change,
+	// either with the addition of a new field or the removal of an existing field,
+	// then the transaction version increases.
+	Version *felt.Felt
+
 	// Version 0 fields
 	// The address of the contract invoked by this transaction.
 	ContractAddress *felt.Felt
@@ -99,16 +110,6 @@ type InvokeTransaction struct {
 	SenderAddress *felt.Felt
 	// The transaction nonce.
 	Nonce *felt.Felt
-	// The arguments that are passed to the validated and execute functions.
-	CallData []*felt.Felt
-	// Additional information given by the sender, used to validate the transaction.
-	Signature []*felt.Felt
-	// The maximum fee that the sender is willing to pay for the transaction
-	MaxFee *felt.Felt
-	// When the fields that comprise a transaction change,
-	// either with the addition of a new field or the removal of an existing field,
-	// then the transaction version increases.
-	Version *felt.Felt
 }
 
 func (i *InvokeTransaction) hash() *felt.Felt {
