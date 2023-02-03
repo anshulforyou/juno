@@ -261,7 +261,6 @@ func generateReceipt(txns []interface{}, receiptsInterface []interface{}) []*Tra
 		// Some of these values are set to nil since they are not required to calculate the commitment.
 		transactionReceipt := TransactionReceipt{
 			Events:          events,
-			Signatures:      signatures,
 			TransactionHash: hexToFelt(receipt["transaction_hash"].(string)),
 		}
 		receipts[i] = &transactionReceipt

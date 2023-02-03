@@ -52,7 +52,6 @@ type TransactionReceipt struct {
 	ExecutionResources *ExecutionResources
 	L1ToL2Message      *L1ToL2Message
 	L2ToL1Message      []*L2ToL1Message
-	Signatures         []*felt.Felt
 	TransactionHash    *felt.Felt
 	TransactionIndex   *big.Int
 }
