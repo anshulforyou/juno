@@ -57,7 +57,6 @@ type TransactionReceipt struct {
 type Transaction interface {
 	hash() *felt.Felt
 	signature() []*felt.Felt
-	Type() string
 }
 
 type DeployTransaction struct {
@@ -77,10 +76,6 @@ type DeployTransaction struct {
 	// then the transaction version increases.
 	// Transaction version 0 is deprecated and will be removed in a future version of StarkNet.
 	Version *felt.Felt
-}
-
-func (d *DeployTransaction) Type() string {
-	return "DEPLOY"
 }
 
 func (d *DeployTransaction) hash() *felt.Felt {
@@ -116,10 +111,6 @@ type InvokeTransaction struct {
 	Version *felt.Felt
 }
 
-func (i *InvokeTransaction) Type() string {
-	return "INVOKE_FUNCTION"
-}
-
 func (i *InvokeTransaction) hash() *felt.Felt {
 	return i.Hash
 }
@@ -146,10 +137,6 @@ type DeclareTransaction struct {
 	// then the transaction version increases.
 	// Transaction version 0 is deprecated and will be removed in a future version of StarkNet.
 	Version *felt.Felt
-}
-
-func (d *DeclareTransaction) Type() string {
-	return "DECLARE"
 }
 
 func (d *DeclareTransaction) hash() *felt.Felt {
