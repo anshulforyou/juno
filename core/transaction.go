@@ -46,18 +46,6 @@ type BuiltinInstanceCounter struct {
 	RangeCheck uint64
 }
 
-// Todo: Having both TransactionType and DeployTransaction,
-// InvokeTransaction and DeclareTransaction is redundant
-type TransactionType int
-
-const (
-	Declare TransactionType = iota
-	Deploy
-	DeployAccount
-	Invoke
-	L1Handler
-)
-
 type TransactionReceipt struct {
 	ActualFee          *felt.Felt
 	Events             []*Event
@@ -67,8 +55,6 @@ type TransactionReceipt struct {
 	Signatures         []*felt.Felt
 	TransactionHash    *felt.Felt
 	TransactionIndex   *big.Int
-	// Todo: Do we need to have this?
-	Type TransactionType
 }
 
 type Transaction interface {

@@ -232,23 +232,6 @@ func getTransactionReceipts(t *testing.T) {
 func generateReceipt(txns []interface{}, receiptsInterface []interface{}) []*TransactionReceipt {
 	receipts := make([]*TransactionReceipt, len(txns))
 
-	transactionType := func(t string) TransactionType {
-		switch t {
-		case "DECLARE":
-			return Declare
-		case "DEPLOY":
-			return Deploy
-		case "DEPLOY_ACCOUNT":
-			return DeployAccount
-		case "INVOKE_FUNCTION":
-			return Invoke
-		case "L1_HANDLER":
-			return L1Handler
-		default:
-			return -1
-		}
-	}
-
 	for i, r := range receiptsInterface {
 		receipt := r.(map[string]interface{})
 		txn := txns[i].(map[string]interface{})
@@ -280,7 +263,6 @@ func generateReceipt(txns []interface{}, receiptsInterface []interface{}) []*Tra
 			Events:          events,
 			Signatures:      signatures,
 			TransactionHash: hexToFelt(receipt["transaction_hash"].(string)),
-			Type:            transactionType(txn["type"].(string)),
 		}
 		receipts[i] = &transactionReceipt
 	}
