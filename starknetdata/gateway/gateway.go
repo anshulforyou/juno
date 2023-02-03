@@ -94,7 +94,6 @@ func adaptTransactionReceipt(response *clients.TransactionReceipt) *core.Transac
 	return &core.TransactionReceipt{
 		ActualFee:          response.ActualFee,
 		TransactionHash:    response.TransactionHash,
-		TransactionIndex:   response.TransactionIndex,
 		Events:             events,
 		ExecutionResources: adaptExecutionResources(response.ExecutionResources),
 		L1ToL2Message:      adaptL1ToL2Message(response.L1ToL2Message),

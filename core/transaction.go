@@ -2,7 +2,6 @@ package core
 
 import (
 	"errors"
-	"math/big"
 
 	"github.com/NethermindEth/juno/core/crypto"
 	"github.com/NethermindEth/juno/core/felt"
@@ -53,7 +52,6 @@ type TransactionReceipt struct {
 	L1ToL2Message      *L1ToL2Message
 	L2ToL1Message      []*L2ToL1Message
 	TransactionHash    *felt.Felt
-	TransactionIndex   *big.Int
 }
 
 type Transaction interface {
