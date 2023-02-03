@@ -82,3 +82,7 @@ func (n *Node) Shutdown() error {
 
 	return n.synchronizer.Shutdown()
 }
+
+func (n *Node) Config() Config {
+	return *n.cfg
+}
