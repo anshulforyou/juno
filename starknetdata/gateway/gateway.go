@@ -92,7 +92,7 @@ func adaptTransactionReceipt(response *clients.TransactionReceipt) *core.Transac
 	}
 
 	return &core.TransactionReceipt{
-		ActualFee:          response.ActualFee,
+		Fee:                response.ActualFee,
 		TransactionHash:    response.TransactionHash,
 		Events:             events,
 		ExecutionResources: adaptExecutionResources(response.ExecutionResources),

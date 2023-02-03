@@ -46,7 +46,7 @@ type BuiltinInstanceCounter struct {
 }
 
 type TransactionReceipt struct {
-	ActualFee          *felt.Felt
+	Fee                *felt.Felt
 	Events             []*Event
 	ExecutionResources *ExecutionResources
 	L1ToL2Message      *L1ToL2Message
