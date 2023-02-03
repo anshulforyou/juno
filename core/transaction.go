@@ -56,7 +56,7 @@ type TransactionReceipt struct {
 
 type Transaction interface {
 	hash() *felt.Felt
-	signatures() []*felt.Felt
+	signature() []*felt.Felt
 	Type() string
 }
 
@@ -87,7 +87,7 @@ func (d *DeployTransaction) hash() *felt.Felt {
 	return d.Hash
 }
 
-func (d *DeployTransaction) signatures() []*felt.Felt {
+func (d *DeployTransaction) signature() []*felt.Felt {
 	return make([]*felt.Felt, 0)
 }
 
@@ -124,8 +124,8 @@ func (i *InvokeTransaction) hash() *felt.Felt {
 	return i.Hash
 }
 
-func (i *InvokeTransaction) signatures() []*felt.Felt {
-	return i.Signatures
+func (i *InvokeTransaction) signature() []*felt.Felt {
+	return i.Signature
 }
 
 type DeclareTransaction struct {
@@ -156,8 +156,8 @@ func (d *DeclareTransaction) hash() *felt.Felt {
 	return d.Hash
 }
 
-func (d *DeclareTransaction) signatures() []*felt.Felt {
-	return d.Signatures
+func (d *DeclareTransaction) signature() []*felt.Felt {
+	return d.Signature
 }
 
 func TransactionHash(transaction Transaction, network utils.Network) (*felt.Felt, error) {
@@ -251,15 +251,15 @@ func TransactionCommitment(transactions []Transaction) (*felt.Felt, error) {
 	return transactionCommitment, trie.RunOnTempTrie(commitmentTrieHeight, func(trie *trie.Trie) error {
 		zeroFelt := new(felt.Felt)
 		for i, transaction := range transactions {
-			signatures := transaction.signatures()
+			signature := transaction.signature()
 			hash := transaction.hash()
 
-			signaturesHash := crypto.Pedersen(zeroFelt, zeroFelt)
-			if len(signatures) > 0 {
-				signaturesHash = crypto.PedersenArray(signatures...)
+			signatureHash := crypto.Pedersen(zeroFelt, zeroFelt)
+			if len(signature) > 0 {
+				signatureHash = crypto.PedersenArray(signature...)
 			}
 
-			if _, err := trie.Put(new(felt.Felt).SetUint64(uint64(i)), crypto.Pedersen(hash, signaturesHash)); err != nil {
+			if _, err := trie.Put(new(felt.Felt).SetUint64(uint64(i)), crypto.Pedersen(hash, signatureHash)); err != nil {
 				return err
 			}
 		}

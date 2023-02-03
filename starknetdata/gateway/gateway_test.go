@@ -199,7 +199,7 @@ func TestAdaptTransaction(t *testing.T) {
 		assert.Equal(t, transaction.SenderAddress, invokeTx.SenderAddress)
 		assert.Equal(t, transaction.Nonce, invokeTx.Nonce)
 		assert.Equal(t, transaction.Calldata, invokeTx.CallData)
-		assert.Equal(t, transaction.Signature, invokeTx.Signatures)
+		assert.Equal(t, transaction.Signature, invokeTx.Signature)
 		assert.Equal(t, transaction.MaxFee, invokeTx.MaxFee)
 		assert.Equal(t, transaction.Version, invokeTx.Version)
 	})
@@ -237,7 +237,7 @@ func TestAdaptTransaction(t *testing.T) {
 		assert.Equal(t, transaction.Version, declareTx.Version)
 		assert.Equal(t, transaction.Nonce, declareTx.Nonce)
 		assert.Equal(t, transaction.MaxFee, declareTx.MaxFee)
-		assert.Equal(t, transaction.Signature, declareTx.Signatures)
+		assert.Equal(t, transaction.Signature, declareTx.Signature)
 		assert.Equal(t, transaction.ClassHash, declareTx.ClassHash)
 	})
 }

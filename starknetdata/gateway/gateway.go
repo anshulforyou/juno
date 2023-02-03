@@ -197,7 +197,7 @@ func adaptDeclareTransaction(t *clients.Transaction) *core.DeclareTransaction {
 		Hash:          t.Hash,
 		SenderAddress: t.SenderAddress,
 		MaxFee:        t.MaxFee,
-		Signatures:    t.Signature,
+		Signature:     t.Signature,
 		Nonce:         t.Nonce,
 		Version:       t.Version,
 		ClassHash:     t.ClassHash,
@@ -223,7 +223,7 @@ func adaptInvokeTransaction(t *clients.Transaction) *core.InvokeTransaction {
 		SenderAddress:      t.SenderAddress,
 		Nonce:              t.Nonce,
 		CallData:           t.Calldata,
-		Signatures:         t.Signature,
+		Signature:          t.Signature,
 		MaxFee:             t.MaxFee,
 		Version:            t.Version,
 	}
